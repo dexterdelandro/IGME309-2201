@@ -1,5 +1,7 @@
 #include "AppClass.h"
 using namespace Simplex;
+
+//Testing github pushing.
 void Application::InitVariables(void)
 {
 	////Alberto needed this at this position for software recording.
