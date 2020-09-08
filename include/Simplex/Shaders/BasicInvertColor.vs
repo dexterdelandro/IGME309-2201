@@ -8,7 +8,7 @@ out vec4 Fragment;
 
 void main()
 {
-	Fragment = vec4(1-Color.r, 1-Color.g, 1-Color.b,1);
+	Fragment = vec4(Color,1);
 	
 	if(SolidColor.r != -1.0 && SolidColor.g != -1.0 && SolidColor.b != -1.0)
 		Fragment = vec4(SolidColor, 1);
