@@ -275,9 +275,21 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	GLfloat angle = (2.0f * PI / a_nSubdivisions);
+	float halfHeight = a_fHeight / 2.0f;
+	std::vector<vector3> vertices;
+
+	//calculates and adds vertices
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		vertices.push_back(vector3(cos(angle*i)*a_fRadius, halfHeight, sin(angle * i) * a_fRadius));
+	}
+
+	//draw tri's
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		AddTri(vertices[(i + 1) % a_nSubdivisions], vertices[i], vector3(0, halfHeight,0));
+		AddTri(vertices[i], vertices[(i + 1) % a_nSubdivisions], vector3(0, -halfHeight, 0));
+	}
+
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -299,9 +311,24 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	GLfloat angle = (2.0f * PI / a_nSubdivisions);
+	float halfHeight = a_fHeight / 2.0f;
+
+	std::vector<vector3> topVertices; //verticies on top
+	std::vector<vector3> bottomVertices; //verticies on bottom
+
+	//fill up vertices
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		topVertices.push_back(vector3(cos(angle*i)*a_fRadius, halfHeight, sin(angle*i)* a_fRadius));
+		bottomVertices.push_back(vector3(cos(angle * i) * a_fRadius, -halfHeight, sin(angle * i) * a_fRadius));
+	}
+
+	//draw the tri's
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		AddTri(bottomVertices[i], bottomVertices[(i + 1) % a_nSubdivisions], vector3(0, -halfHeight, 0));
+		AddTri(topVertices[(i + 1) % a_nSubdivisions], topVertices[i], vector3(0, halfHeight, 0));
+		AddQuad(bottomVertices[(i + 1) % a_nSubdivisions], bottomVertices[i], topVertices[(i + 1) % a_nSubdivisions], topVertices[i]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -329,16 +356,43 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	GLfloat angle = (2.0f * PI / a_nSubdivisions);
+	float halfHeight = a_fHeight / 2.0f;
 
+	std::vector<vector3> outerTopVerticies; //outer top vertices
+	std::vector<vector3> innerTopVerticies; //inner top vertices
+	std::vector<vector3> outerBottomVerticies; //outer bottom vertices
+	std::vector<vector3> innerBottomVerticies; //inner bottom vertices
+
+	//fill up vertices
+	for (int i = 0; i < a_nSubdivisions; i++) {
+
+		outerTopVerticies.push_back(vector3(cos(angle * i) * a_fOuterRadius, halfHeight, sin(angle * i) * a_fOuterRadius));
+		innerTopVerticies.push_back(vector3(cos(angle * i) * a_fInnerRadius, halfHeight, sin(angle * i) * a_fInnerRadius));
+		outerBottomVerticies.push_back(vector3(cos(angle * i) * a_fOuterRadius, -halfHeight, sin(angle * i) * a_fOuterRadius));
+		innerBottomVerticies.push_back(vector3(cos(angle * i) * a_fInnerRadius, -halfHeight, sin(angle * i) * a_fInnerRadius));
+	}
+	
+	//draw tri's
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		AddQuad(outerBottomVerticies[i], outerBottomVerticies[(i + 1) % a_nSubdivisions], innerBottomVerticies[i], innerBottomVerticies[(i + 1) % a_nSubdivisions]);
+		AddQuad(outerTopVerticies[(i + 1) % a_nSubdivisions], outerTopVerticies[i], innerTopVerticies[(i + 1) % a_nSubdivisions], innerTopVerticies[i]);
+		AddQuad(outerBottomVerticies[(i + 1) % a_nSubdivisions], outerBottomVerticies[i], outerTopVerticies[(i + 1) % a_nSubdivisions], outerTopVerticies[i]);
+		AddQuad(innerBottomVerticies[i], innerBottomVerticies[(i + 1) % a_nSubdivisions], innerTopVerticies[i], innerTopVerticies[(i + 1) % a_nSubdivisions]);
+	}
+	
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
 }
 void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSubdivisionsA, int a_nSubdivisionsB, vector3 a_v3Color)
 {
+
+	//DOESN'T WORK!
+	// I tried to do something similar with withat I did with the sphere, but just adjusting it for the
+	// two different radii and two different subdivisions. The resulting shape kind of looks like a pinecone.
+	// I think I messed up the ordering of calling the AddQuad method, and i could also be adding the verticies
+	// to the wrong array
 	if (a_fOuterRadius < 0.01f)
 		a_fOuterRadius = 0.01f;
 
@@ -361,9 +415,34 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	std::vector<vector3> v1;
+	std::vector<vector3> v2;
+	std::vector<vector3> v3;
+	std::vector<vector3> v4;
+
+	for (int i = 0; i < a_nSubdivisionsA; i++)
+	{
+		GLfloat t1 = PI * ((GLfloat)i / a_nSubdivisionsA);
+		GLfloat t2 = PI * ((GLfloat)(i + 1) / a_nSubdivisionsA);
+
+		for (int j = 0; j < a_nSubdivisionsB; j++)
+		{
+			GLfloat p1 = 2.0f * PI * ((GLfloat)j / a_nSubdivisionsB);
+			GLfloat p2 = 2.0f * PI * ((GLfloat)(j + 1) / a_nSubdivisionsB);
+
+			v1.push_back(vector3(sin(t1) * cos(p1), sin(t1) * sin(p1), cos(t1)) * a_fOuterRadius);
+			v2.push_back(vector3(sin(t1) * cos(p2), sin(t1) * sin(p2), cos(t1)) * a_fOuterRadius);
+			v3.push_back(vector3(sin(t2) * cos(p2), sin(t2) * sin(p2), cos(t2)) * a_fInnerRadius);
+			v4.push_back(vector3(sin(t2) * cos(p1), sin(t2) * sin(p1), cos(t2)) * a_fInnerRadius);
+		}
+	}
+
+	//draw the tri's and quads
+	AddTri(v4[0], v3[0], v1[0]);//top tri
+	for (int i = 0; i < v1.size(); i++) {
+		AddQuad(v4[i], v3[i], v1[i], v2[i]); //middle quads
+	}
+	AddTri(v2[a_nSubdivisionsA - 1], v1[a_nSubdivisionsA - 1], v3[a_nSubdivisionsB - 1]); //bottom tri
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -386,9 +465,37 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	
+	std::vector<vector3> v1;
+	std::vector<vector3> v2;
+	std::vector<vector3> v3;
+	std::vector<vector3> v4;
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		GLfloat t1 = PI*((GLfloat)i /a_nSubdivisions);
+		GLfloat t2 = PI*((GLfloat)(i + 1)/a_nSubdivisions);
+
+		for (int j = 0; j < a_nSubdivisions; j++)
+		{
+			GLfloat p1 = 2.0f*PI*((GLfloat)j /a_nSubdivisions);
+			GLfloat p2 = 2.0f*PI*((GLfloat)(j + 1) /a_nSubdivisions);
+
+			v1.push_back(vector3(sin(t1) * cos(p1), sin(t1) * sin(p1), cos(t1)) * a_fRadius);
+			v2.push_back(vector3(sin(t1) * cos(p2), sin(t1) * sin(p2), cos(t1)) * a_fRadius);
+			v3.push_back(vector3(sin(t2) * cos(p2), sin(t2) * sin(p2), cos(t2)) * a_fRadius);
+			v4.push_back(vector3(sin(t2) * cos(p1), sin(t2) * sin(p1), cos(t2)) * a_fRadius);
+		}
+	}
+
+	//draw the tri's and quads
+	AddTri(v4[0],v3[0], v1[0]);//top tri
+	for (int i = 0; i < v1.size(); i++) {
+		AddQuad(v4[i], v3[i], v1[i], v2[i]); //middle quads
+	}
+	AddTri(v2[a_nSubdivisions-1], v1[a_nSubdivisions - 1], v3[a_nSubdivisions - 1]); //bottom tri
+
+	
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);

@@ -19,6 +19,7 @@ void MyMesh::GenerateCircle(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		if (i < a_nSubdivisions-1) {
 			AddTri(ZERO_V3, vector3(cos(i * angle) * a_fRadius, sin(i * angle) * a_fRadius, 0.0f),
 				vector3(cos((i+1) * angle) * a_fRadius, sin((i+1) * angle) * a_fRadius, 0.0f));
+
 		}
 		else {
 			AddTri(ZERO_V3, vector3(cos(i * angle) * a_fRadius, sin(i * angle) * a_fRadius, 0.0f),
