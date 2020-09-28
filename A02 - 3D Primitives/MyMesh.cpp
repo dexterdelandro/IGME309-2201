@@ -281,7 +281,7 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 
 	//calculates and adds vertices
 	for (int i = 0; i < a_nSubdivisions; i++) {
-		vertices.push_back(vector3(cos(angle*i)*a_fRadius, halfHeight, sin(angle * i) * a_fRadius));
+		vertices.push_back(vector3(cos(angle*i)* a_fRadius, halfHeight, sin(angle * i) * a_fRadius));
 	}
 
 	//draw tri's
@@ -388,11 +388,7 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSubdivisionsA, int a_nSubdivisionsB, vector3 a_v3Color)
 {
 
-	//DOESN'T WORK!
-	// I tried to do something similar with withat I did with the sphere, but just adjusting it for the
-	// two different radii and two different subdivisions. The resulting shape kind of looks like a pinecone.
-	// I think I messed up the ordering of calling the AddQuad method, and i could also be adding the verticies
-	// to the wrong array
+	
 	if (a_fOuterRadius < 0.01f)
 		a_fOuterRadius = 0.01f;
 
@@ -415,34 +411,36 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	std::vector<vector3> v1;
-	std::vector<vector3> v2;
-	std::vector<vector3> v3;
-	std::vector<vector3> v4;
+	//set up variables so looping is easier
+	float diffRad = (a_fOuterRadius - a_fInnerRadius) / 2;
+	float sumRad = (a_fOuterRadius + a_fInnerRadius) / 2;
+	float outerAngle = 2.0f * PI / a_nSubdivisionsA;
+	float innerAngle = 2.0f * PI / a_nSubdivisionsB;
+	float x;
+	float y;
+	float z;
 
-	for (int i = 0; i < a_nSubdivisionsA; i++)
-	{
-		GLfloat t1 = PI * ((GLfloat)i / a_nSubdivisionsA);
-		GLfloat t2 = PI * ((GLfloat)(i + 1) / a_nSubdivisionsA);
+	//set up vertices list
+	std::vector<std::vector<vector3>> vertices;
+	for (int i = 0; i < a_nSubdivisionsB; i++) vertices.push_back(std::vector<vector3>());
 
-		for (int j = 0; j < a_nSubdivisionsB; j++)
-		{
-			GLfloat p1 = 2.0f * PI * ((GLfloat)j / a_nSubdivisionsB);
-			GLfloat p2 = 2.0f * PI * ((GLfloat)(j + 1) / a_nSubdivisionsB);
-
-			v1.push_back(vector3(sin(t1) * cos(p1), sin(t1) * sin(p1), cos(t1)) * a_fOuterRadius);
-			v2.push_back(vector3(sin(t1) * cos(p2), sin(t1) * sin(p2), cos(t1)) * a_fOuterRadius);
-			v3.push_back(vector3(sin(t2) * cos(p2), sin(t2) * sin(p2), cos(t2)) * a_fInnerRadius);
-			v4.push_back(vector3(sin(t2) * cos(p1), sin(t2) * sin(p1), cos(t2)) * a_fInnerRadius);
+	//caluclate and add verticies to list
+	for (int i = 0; i < a_nSubdivisionsA; i++) {
+		for (int j = 0; j < a_nSubdivisionsB; j++) {
+			//parametric equation for torus
+			x = (sumRad + (diffRad * cos(outerAngle * i))) * cos(innerAngle * j);
+			y = (sumRad + (diffRad * cos(outerAngle * i))) * sin(innerAngle * j);
+			z = diffRad * sin(outerAngle * i);
+			vertices[j].push_back(vector3(x, y, z));
 		}
 	}
 
-	//draw the tri's and quads
-	AddTri(v4[0], v3[0], v1[0]);//top tri
-	for (int i = 0; i < v1.size(); i++) {
-		AddQuad(v4[i], v3[i], v1[i], v2[i]); //middle quads
+	//draw quads
+	for (int i = 0; i < a_nSubdivisionsA; i++) {
+		for (int j = 0; j < a_nSubdivisionsB; j++) {
+			AddQuad(vertices[j][i], vertices[j][(i+1) % a_nSubdivisionsA], vertices[(j+1) % a_nSubdivisionsB][i], vertices[(j + 1) % a_nSubdivisionsB][(i + 1) % a_nSubdivisionsA]);
+		}
 	}
-	AddTri(v2[a_nSubdivisionsA - 1], v1[a_nSubdivisionsA - 1], v3[a_nSubdivisionsB - 1]); //bottom tri
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
