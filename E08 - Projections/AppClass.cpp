@@ -3,7 +3,7 @@ using namespace Simplex;
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Dexter Delandro - dmd7488@rit.edu";
 
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
@@ -52,23 +52,34 @@ void Application::Display(void)
 	case 1:
 		m_pCamera->ResetCamera();
 		break;
-	case 2:
+	case 2://no perspetive
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
 		break;
-	case 3:
+	case 3://to the side and also rotated counterclockwise
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(vector3(25.0f, 0.0f, 0.0f));
+		m_pCamera->SetUp(vector3(0.0f, 0.0f, -1.0f));
 		break;
-	case 4:
+	case 4://backwards
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(vector3(0.0f, 0.0f, -15.0f));
 		break;
-	case 5:
+	case 5: //no pyramid and backwards
 		m_pCamera->ResetCamera();
+		m_pCamera->SetNearFar(vector2(8.0f, 1000.0f));
+		m_pCamera->SetPosition(vector3(0.0f, 0.0f, -15.0f));
+
 		break;
-	case 6:
+	case 6:// no red circle and backwards
 		m_pCamera->ResetCamera();
+		m_pCamera->SetNearFar(vector2(1.0f, 10.0f));
+		m_pCamera->SetPosition(vector3(0.0f, 0.0f, -15.0f));
+
 		break;
-	case 7:
+	case 7: //upside down
 		m_pCamera->ResetCamera();
+		m_pCamera->SetUp(vector3(0.0f, -1.0f, 0.0f));
 		break;
 	}
 
