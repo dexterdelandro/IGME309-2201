@@ -287,6 +287,144 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
 
+	//get the radius of this object
+	float thisRadius = this->GetRadius();
+
+	//get the radius of the other object
+	float otherRadius = a_pOther->GetRadius();
+
+	//create rotaion 3x3 mats for this object
+	glm::mat3x3 thisRotation;
+
+	//create rotation 3x3 mats for other object
+	glm::mat3x3 otherRotation;
+
+	//this object's center
+	vector3 thisCenter = this->GetCenterGlobal();
+
+	//other object's center
+	vector3 otherCenter = a_pOther->GetCenterGlobal();
+
+	//this objects' halfwidth
+	vector3 thisHalfW = this->GetHalfWidth();
+
+	//other ojects' halfwidth
+	vector3 otherHalfW = a_pOther->GetHalfWidth();
+
+	//create and fill vec with this objecets' model matrix points
+	std::vector<vector3> thisVecPoints;
+
+	thisVecPoints.push_back(vector3(this->GetModelMatrix()[0][0], this->GetModelMatrix()[0][1], this->GetModelMatrix()[0][2]));
+	thisVecPoints.push_back(vector3(this->GetModelMatrix()[1][0], this->GetModelMatrix()[1][1], this->GetModelMatrix()[1][2]));
+	thisVecPoints.push_back(vector3(this->GetModelMatrix()[2][0], this->GetModelMatrix()[2][1], this->GetModelMatrix()[2][2]));
+
+	//create and fill vec with the other objecets' model matrix points
+	std::vector<vector3> otherVecPoints;
+
+	otherVecPoints.push_back(vector3(a_pOther->GetModelMatrix()[0][0], a_pOther->GetModelMatrix()[0][1], a_pOther->GetModelMatrix()[0][2]));
+	otherVecPoints.push_back(vector3(a_pOther->GetModelMatrix()[1][0], a_pOther->GetModelMatrix()[1][1], a_pOther->GetModelMatrix()[1][2]));
+	otherVecPoints.push_back(vector3(a_pOther->GetModelMatrix()[2][0], a_pOther->GetModelMatrix()[2][1], a_pOther->GetModelMatrix()[2][2]));
+
+
+	// Calculate the rotation matrix of other object in this objects' frame
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			thisRotation[i][j] = glm::dot(thisVecPoints[i], otherVecPoints[j]);
+
+	// Calculate the translation vector
+	vector3 t = a_pOther->GetCenterGlobal() - this->GetCenterGlobal();
+
+	// move translation vector to match this objects' frame
+	t = vector3(glm::dot(t, thisVecPoints[0]), glm::dot(t, thisVecPoints[1]), glm::dot(t, thisVecPoints[2]));
+
+	//Calculate the common subexpressions 
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			otherRotation[i][j] = glm::abs(thisRotation[i][j]) + FLT_EPSILON;
+
+	//now that we have everything calculated and set up, peform the 15 tests
+	//test 1-3: other objects' direct axis
+	//test 4-6: this objects' direct axis
+	//test 7: this 0 x other 0
+	//test 8: this 0 x other 1
+	//test 9: this 0 x other 2
+	//test 10: this 1 x other 0
+	//test 11: this 1 x other 1
+	//test 12: this 1 x other 2
+	//test 13: this 0 x other 1
+	//test 14: this 0 x other 2
+	//test 15: this 0 x other 3
+
+
+	//AXIS TEST: Test other objects' direct axis
+	for (int i = 0; i < 3; i++) {
+		thisRadius = thisHalfW[0] * otherRotation[0][i] + thisHalfW[1] * otherRotation[1][i] + thisHalfW[2] * otherRotation[2][i];
+		otherRadius = otherHalfW[i];
+		if (glm::abs(t[0] * thisRotation[0][i] + t[1] * thisRotation[1][i] + t[2] * thisRotation[2][i]) > thisRadius + otherRadius) {
+			if (i == 0) return eSATResults::SAT_AX;
+			if (i == 1) return eSATResults::SAT_AY;
+			if (i == 2) return eSATResults::SAT_AZ;
+		}
+	}
+
+	//AXIS TEST: this objects' direct axis
+	for (int i = 0; i < 3; i++)
+	{
+		thisRadius = thisHalfW[i];
+		otherRadius = otherHalfW[0] * otherRotation[i][0] + otherHalfW[1] * otherRotation[i][1] + otherHalfW[2] * otherRotation[i][2];
+		if (glm::abs(t[i]) > thisRadius + otherRadius) {
+			if (i == 0) return eSATResults::SAT_BX;
+			if (i == 1) return eSATResults::SAT_BY;
+			if (i == 2) return eSATResults::SAT_BZ;
+		}
+
+	}
+
+	//AXIS TEST: this 0 and other 0
+	thisRadius = thisHalfW[1] * otherRotation[2][0] + thisHalfW[2] * otherRotation[1][0];
+	otherRadius = otherHalfW[1] * otherRotation[0][2] + otherHalfW[2] * otherRotation[0][1];
+	if (glm::abs(t[2] * thisRotation[1][0] - t[1] * thisRotation[2][0]) > thisRadius + otherRadius) return eSATResults::SAT_AXxBX;
+
+	//AXIS TEST: this 0 and other 1
+	thisRadius = thisHalfW[1] * otherRotation[2][1] + thisHalfW[2] * otherRotation[1][1];
+	otherRadius = otherHalfW[0] * otherRotation[0][2] + otherHalfW[2] * otherRotation[0][0];
+	if (glm::abs(t[2] * thisRotation[1][1] - t[1] * thisRotation[2][1]) > thisRadius + otherRadius) return eSATResults::SAT_AXxBY;
+
+	//AXIS TEST: this 0 and other 2
+	thisRadius = thisHalfW[1] * otherRotation[2][2] + thisHalfW[2] * otherRotation[1][2];
+	otherRadius = otherHalfW[0] * otherRotation[0][1] + otherHalfW[1] * otherRotation[0][0];
+	if (glm::abs(t[2] * thisRotation[1][2] - t[1] * thisRotation[2][2]) > thisRadius + otherRadius) return eSATResults::SAT_AXxBZ;
+
+	//AXIS TEST: this 1 and other 0
+	thisRadius = thisHalfW[0] * otherRotation[2][0] + thisHalfW[2] * otherRotation[0][0];
+	otherRadius = otherHalfW[1] * otherRotation[1][2] + otherHalfW[2] * otherRotation[1][1];
+	if (glm::abs(t[0] * thisRotation[2][0] - t[2] * thisRotation[0][0]) > thisRadius + otherRadius) return eSATResults::SAT_AYxBX;
+
+	//AXIS TEST: this 1 and other 1
+	thisRadius = thisHalfW[0] * otherRotation[2][1] + thisHalfW[2] * otherRotation[0][1];
+	otherRadius = otherHalfW[0] * otherRotation[1][2] + otherHalfW[2] * otherRotation[1][0];
+	if (glm::abs(t[0] * thisRotation[2][1] - t[2] * thisRotation[0][1]) > thisRadius + otherRadius) return eSATResults::SAT_AYxBY;
+
+	//AXIS TEST: this 1 and other 2
+	thisRadius = thisHalfW[0] * otherRotation[2][2] + thisHalfW[2] * otherRotation[0][2];
+	otherRadius = otherHalfW[0] * otherRotation[1][1] + otherHalfW[1] * otherRotation[1][0];
+	if (glm::abs(t[0] * thisRotation[2][2] - t[2] * thisRotation[0][2]) > thisRadius + otherRadius) return eSATResults::SAT_AYxBZ;
+
+	//AXIS TEST: this 2 and other 0
+	thisRadius = thisHalfW[0] * otherRotation[1][0] + thisHalfW[1] * otherRotation[0][0];
+	otherRadius = otherHalfW[1] * otherRotation[2][2] + otherHalfW[2] * otherRotation[2][1];
+	if (glm::abs(t[1] * thisRotation[0][0] - t[0] * thisRotation[1][0]) > thisRadius + otherRadius) return eSATResults::SAT_AZxBX;
+
+	//AXIS TEST: this 2 and other 1
+	thisRadius = thisHalfW[0] * otherRotation[1][1] + thisHalfW[1] * otherRotation[0][1];
+	otherRadius = otherHalfW[0] * otherRotation[2][2] + otherHalfW[2] * otherRotation[2][0];
+	if (glm::abs(t[1] * thisRotation[0][1] - t[0] * thisRotation[1][1]) > thisRadius + otherRadius) return eSATResults::SAT_AZxBY;
+
+	//AXIS TEST: this 2 and other 2
+	thisRadius = thisHalfW[0] * otherRotation[1][2] + thisHalfW[1] * otherRotation[0][2];
+	otherRadius = otherHalfW[0] * otherRotation[2][1] + otherHalfW[1] * otherRotation[2][0];
+	if (glm::abs(t[1] * thisRotation[0][2] - t[0] * thisRotation[1][2]) > thisRadius + otherRadius) return eSATResults::SAT_AZxBZ;
+
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
 }
